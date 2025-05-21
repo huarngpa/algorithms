@@ -1,5 +1,6 @@
 plugins {
     id("java")
+    id("com.diffplug.spotless") version "7.0.3"
 }
 
 group = "com.github.huarngpa"
@@ -14,6 +15,17 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter")
 }
 
+spotless {
+    java {
+        googleJavaFormat()
+        target("src/*/java/**/*.java")
+    }
+}
+
 tasks.test {
     useJUnitPlatform()
+}
+
+tasks.named("compileJava") {
+    dependsOn("spotlessApply")
 }
