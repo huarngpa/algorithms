@@ -14,14 +14,14 @@ public class ArrayTripletsPythagorean {
    * within constraints.
    */
   public static int[][] pythagoreanTriplets(int[] array) {
-      if (array == null || array.length < 3) {
-          return new int[0][];
-      }
+    if (array == null || array.length < 3) {
+      return new int[0][];
+    }
     Arrays.sort(array);
     // Cache squared value to value
     Map<Integer, Integer> map = new HashMap<>();
     for (int i = 0; i < array.length; i++) {
-      map.put(array[i] * array[i], i);
+      map.put(array[i] * array[i], array[i]);
     }
     // Two pointer technique
     Map<String, int[]> triplets = new HashMap<>();
