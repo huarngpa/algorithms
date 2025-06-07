@@ -1,7 +1,7 @@
 package com.github.huarngpa.leetcode.coinbase;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 public class TextJustification {
@@ -28,62 +28,45 @@ public class TextJustification {
    * contains at least one word.
    */
   public List<String> fullJustify(String[] words, int maxWidth) {
-    List<String> result = new ArrayList<>();
-    ArrayDeque<String> line = new ArrayDeque<>();
-    int wordCharCount = 0;
-    for (String word : words) {
-      if ((wordCharCount + word.length() + line.size() - 1) <= maxWidth) {
-        line.add(word);
-        wordCharCount += word.length();
-      } else if (line.size() == 1) {
-        // Delegate to another method to build line
-        buildSingleWordLine(result, line.poll(), maxWidth);
-        // Reset
-        line.clear();
-        line.add(word);
-        wordCharCount = word.length();
-      } else {
-        // Delegate to another method to build line
-        buildLine(result, line, maxWidth - wordCharCount);
-        // Reset
-        line.clear();
-        line.add(word);
-        wordCharCount = word.length();
-      }
-    }
-    if (!line.isEmpty()) {
-      if (line.size() == 1) {
-        buildSingleWordLine(result, line.poll(), maxWidth);
-      } else {
-        buildLine(result, line, maxWidth - wordCharCount);
-      }
+    List<String> result = new LinkedList<>();
+    int i = 0;
+    while (i < words.length) {
+      List<String> line = getWords(i, words, maxWidth);
+      i += line.size();
+      result.add(createLine(line, i, words, maxWidth));
     }
     return result;
   }
 
-  private void buildSingleWordLine(List<String> result, String word, int maxWidth) {
-    StringBuilder builder = new StringBuilder();
-    builder.append(word);
-    if (maxWidth - word.length() > 0) {
-      builder.append(" ".repeat(maxWidth - word.length()));
+  private List<String> getWords(int i, String[] words, int maxWidth) {
+    List<String> currentLine = new ArrayList<>();
+    int currLength = 0;
+    while (i < words.length && currLength + words[i].length() <= maxWidth) {
+      currentLine.add(words[i]);
+      currLength += words[i].length() + 1;
+      i++;
     }
-    result.add(builder.toString());
+    return currentLine;
   }
 
-  private void buildLine(List<String> result, ArrayDeque<String> line, int totalSpacing) {
-    // Figure out spacing
-    // int totalSpacing = maxWidth - wordCharCount;
-    int spacing = totalSpacing / (line.size() - 1);
-    int mod = totalSpacing % (line.size() - 1);
-    // Build string
-    StringBuilder builder = new StringBuilder();
-    for (int i = 0; i < mod; i++) {
-      builder.append(line.poll()).append(" ".repeat(spacing + 1));
+  private String createLine(List<String> line, int i, String[] words, int maxWidth) {
+    int baseLength = -1;
+    for (String word : line) {
+      baseLength += word.length() + 1;
     }
-    while (line.size() > 1) {
-      builder.append(line.poll()).append(" ".repeat(spacing));
+    int extraSpaces = maxWidth - baseLength;
+    if (line.size() == 1 || i == words.length) {
+      return String.join(" ", line) + " ".repeat(extraSpaces);
     }
-    builder.append(line.poll());
-    result.add(builder.toString());
+    int wordCount = line.size() - 1;
+    int spacesPerWord = extraSpaces / wordCount;
+    int neededExtraSpace = extraSpaces % wordCount;
+    for (int j = 0; j < neededExtraSpace; j++) {
+      line.set(j, line.get(j) + " ");
+    }
+    for (int j = 0; j < wordCount; j++) {
+      line.set(j, line.get(j) + " ".repeat(spacesPerWord));
+    }
+    return String.join(" ", line);
   }
 }
