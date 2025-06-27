@@ -2,6 +2,7 @@ package com.github.huarngpa.leetcode.coinbase;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.TreeMap;
 
 /**
@@ -39,5 +40,31 @@ public class TimeMap {
       return "";
     }
     return treeMap.get(floorKey);
+  }
+
+  // Extend the TimeMap class to support a delete(String key, int timestamp) method that removes the
+  // value associated with the given key and timestamp. Ensure subsequent get operations reflect the
+  // deletion. If the timestamp doesn’t exist, do nothing. How would you handle deleting all values
+  // for a key up to a given timestamp?
+  public void delete(String key, int timestamp) {
+    TreeMap<Integer, String> treeMap = map.get(key);
+    if (treeMap != null) {
+      treeMap.remove(timestamp);
+      if (treeMap.isEmpty()) {
+        map.remove(key); // Optional bit of clean up, this is nice
+      }
+    }
+  }
+
+  public void deleteUpTo(String Key, int timestamp) {
+    TreeMap<Integer, String> treeMap = map.get(Key);
+    if (treeMap != null) {
+      // Remove all entries with timestamps <= timestamp
+      NavigableMap<Integer, String> toRemove = treeMap.headMap(timestamp, true);
+      toRemove.clear();
+      if (treeMap.isEmpty()) {
+        map.remove(Key);
+      }
+    }
   }
 }
