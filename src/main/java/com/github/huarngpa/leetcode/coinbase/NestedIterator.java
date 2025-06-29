@@ -31,11 +31,17 @@ public class NestedIterator implements Iterator<Integer> {
 
   private Stack<NestedInteger> stack = new Stack<>();
 
+  // Extended, see update
+  private List<NestedInteger> nestedList; // Store original list
+  private int processedIndex = 0;
+
   public NestedIterator(List<NestedInteger> nestedList) {
     // Push elements in reverse order into the stack
     for (int i = nestedList.size() - 1; i >= 0; i--) {
       stack.push(nestedList.get(i));
     }
+    // Extended
+    this.nestedList = nestedList;
   }
 
   @Override
@@ -53,7 +59,47 @@ public class NestedIterator implements Iterator<Integer> {
 
   @Override
   public Integer next() {
+    // Extended
+    processedIndex++;
     // Assumes hasNext() is `true`
     return stack.pop().getInteger();
+  }
+
+  /**
+   * Extend the NestedIterator to support an update(List<NestedInteger> newList, int index) method
+   * that replaces the nested list at a given index in the original input list. Ensure subsequent
+   * hasNext and next calls reflect the updated list. For example, if the original list is
+   * [[1,1],2], calling update([3,4], 0) changes it to [[3,4],2], and the iterator should yield
+   * 3,4,2. How would you handle frequent updates efficiently?
+   */
+  public void update(List<NestedInteger> nestedList, int index) {
+    if (index < 0 || index >= nestedList.size()) {
+      throw new IndexOutOfBoundsException();
+    }
+    nestedList.set(
+        index,
+        new NestedInteger() {
+          @Override
+          public boolean isInteger() {
+            return false;
+          }
+
+          @Override
+          public Integer getInteger() {
+            return null;
+          }
+
+          @Override
+          public List<NestedInteger> getList() {
+            return nestedList;
+          }
+        });
+    // Rebuild stack for unprocessed elements
+    if (index >= processedIndex) {
+      stack.clear();
+      for (int i = nestedList.size() - 1; i >= processedIndex; i--) {
+        stack.push(nestedList.get(i));
+      }
+    }
   }
 }
