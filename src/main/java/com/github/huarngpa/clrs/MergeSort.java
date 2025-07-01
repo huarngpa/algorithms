@@ -3,7 +3,6 @@ package com.github.huarngpa.clrs;
 public class MergeSort {
 
   public static void mergeSort(int[] arr, int left, int right) {
-    // Todo
     if (left < right) {
       int mid = left + (right - left) / 2;
       // Recursively sort left-half
