@@ -75,14 +75,14 @@ geth --ws --ws.api eth,net,debug,txpool,erigon \
 
 Go snippet:
 
-````go
+```go
 client, _ := ethclient.Dial("wss://mainnet.infura.io/ws/v3/<api-key>")
 headers := make(chan *types.Header)
 sub, _ := client.SubscribeNewHead(context.Background(), headers)
 for h := range headers {
     fmt.Printf("Block #%d – %s\n", h.Number.Uint64(), h.Hash().Hex())
 }
-``` :contentReference[oaicite:4]{index=4}  
+```
 
 #### Third-party hosted RPC
 
