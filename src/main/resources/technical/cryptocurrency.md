@@ -86,19 +86,17 @@ for h := range headers {
 
 #### Third-party hosted RPC
 
-| Provider | Notes |
-|----------|-------|
-| **Infura / Alchemy / QuickNode** | Battle-tested, pay-per-request; great for PoCs |
-| **Chainstack** | Multi-cloud, archive options, good docs for `eth_subscribe` |
-| **BlockPi / Blast / Ankr** | Cheaper tiers, variable reliability |
+| Provider                         | Notes                                                       |
+|----------------------------------|-------------------------------------------------------------|
+| **Infura / Alchemy / QuickNode** | Battle-tested, pay-per-request; great for PoCs              |
+| **Chainstack**                   | Multi-cloud, archive options, good docs for `eth_subscribe` |
+| **BlockPi / Blast / Ankr**       | Cheaper tiers, variable reliability                         |
 
 ---
 
 ## 3 · Streaming & ETL patterns
 
 ### 3.1 Real-time ingest
-
-````
 
 ```
   ┌─────────┐  websocket   ┌────────┐   protobuf   ┌──────────┐
@@ -109,30 +107,29 @@ for h := range headers {
                        Spark Structured Streaming │    │ Flink / Beam (late/dup handling)
 ```
 
-```
-
-1. **Deduplicate & canonicalize**: keep `<height, hash>` and ignore if parent mismatch.  
-2. **Re-org buffer**: hold e.g. last N=25 blocks in memory; if a fork comes, retract (tombstone) old rows.  
-3. **Watermarks**: event-time = block timestamp; allowedLateness ≈ 2 min BTC, 15 sec ETH-PoS.  
+1. **Deduplicate & canonicalize**: keep `<height, hash>` and ignore if parent mismatch.
+2. **Re-org buffer**: hold e.g. last N=25 blocks in memory; if a fork comes, retract (tombstone) old rows.
+3. **Watermarks**: event-time = block timestamp; allowedLateness ≈ 2 min BTC, 15 sec ETH-PoS.
 
 ### 3.2 Historical backfill
 
-* **Range scan**: walk blocks 0 → tip, checkpoint every 10 k.  
-* **Firehose/Substreams** – pre-decoded flat files (one gRPC stream per chain) – 50-100× faster than RPC drenches.  :contentReference[oaicite:5]{index=5}  
+* **Range scan**: walk blocks 0 → tip, checkpoint every 10 k.
+* **Firehose/Substreams** – pre-decoded flat files (one gRPC stream per chain) – 50-100× faster than RPC drenches.  :
+  contentReference[oaicite:5]{index=5}
 * **Community dumps**: Google BigQuery public crypto datasets (ETH, BTC, BSC, Polygon).
 
 ---
 
 ## 4 · Canonical data model (minimum viable lake)
 
-| Table | Key columns |
-|-------|-------------|
-| `blocks` | height, hash, parent_hash, ts, gas_used, miner |
-| `transactions` | tx_hash, block_height, from, to, value, fee, status |
-| `logs` (ETH) | tx_hash, idx, address, topics[4], data |
-| `token_transfers` | tx_hash, log_idx, from, to, token_addr, amount |
-| `trace_calls` (ETH trace) | tx_hash, depth, type, error, gas_cost |
-| `utxo` (BTC) | tx_hash, vout, address, satoshis, spent_by |
+| Table                     | Key columns                                         |
+|---------------------------|-----------------------------------------------------|
+| `blocks`                  | height, hash, parent_hash, ts, gas_used, miner      |
+| `transactions`            | tx_hash, block_height, from, to, value, fee, status |
+| `logs` (ETH)              | tx_hash, idx, address, topics[4], data              |
+| `token_transfers`         | tx_hash, log_idx, from, to, token_addr, amount      |
+| `trace_calls` (ETH trace) | tx_hash, depth, type, error, gas_cost               |
+| `utxo` (BTC)              | tx_hash, vout, address, satoshis, spent_by          |
 
 Partition by `block_date=YYYY-MM-DD` or height buckets of 100k; store as **Parquet or Iceberg** for Spark.
 
@@ -140,32 +137,32 @@ Partition by `block_date=YYYY-MM-DD` or height buckets of 100k; store as **Parqu
 
 ## 5 · Tool & library ecosystem map
 
-| Purpose | Bitcoin | Ethereum / EVM |
-|---------|---------|----------------|
-| Core node | `bitcoind` / `btcd` | `geth`, `nethermind`, **`erigon`** |
-| Indexer | Electrum-Server, Esplora | The Graph, Substreams, Tenderly, BlockScout |
-| ETL kit | `bitcoin-etl`, BlockSci | `ethereum-etl`, `blockchain-etl-airflow` |
-| Data lake helpers | Coinmetrics, Amberdata | Dune, Nansen, Flipside |
-| Testing nets | `regtest` | `anvil` (Foundry), `hardhat node` |
+| Purpose           | Bitcoin                  | Ethereum / EVM                              |
+|-------------------|--------------------------|---------------------------------------------|
+| Core node         | `bitcoind` / `btcd`      | `geth`, `nethermind`, **`erigon`**          |
+| Indexer           | Electrum-Server, Esplora | The Graph, Substreams, Tenderly, BlockScout |
+| ETL kit           | `bitcoin-etl`, BlockSci  | `ethereum-etl`, `blockchain-etl-airflow`    |
+| Data lake helpers | Coinmetrics, Amberdata   | Dune, Nansen, Flipside                      |
+| Testing nets      | `regtest`                | `anvil` (Foundry), `hardhat node`           |
 
 ---
 
 ## 6 · Edge-cases you must handle
 
-1. **Re-orgs & chain splits** – always idempotent-upsert by `(block_hash, tx_hash)`.  
-2. **Contract self-destruct & create2** – address reuse in ETH.  
-3. **Token decimals & proxies** – read ERC-20 metadata or rely on trust-lists.  
-4. **Fee models** – Legacy gas vs EIP-1559 (base + priority) vs Bitcoin fee-rate; keep both for analytics.  
+1. **Re-orgs & chain splits** – always idempotent-upsert by `(block_hash, tx_hash)`.
+2. **Contract self-destruct & create2** – address reuse in ETH.
+3. **Token decimals & proxies** – read ERC-20 metadata or rely on trust-lists.
+4. **Fee models** – Legacy gas vs EIP-1559 (base + priority) vs Bitcoin fee-rate; keep both for analytics.
 5. **L2 rollups** – often dump blobs back to L1; treat them as separate chains or sub-streams.
 
 ---
 
 ## 7 · What to prototype in Go before the interview
 
-1. **ETH live block consumer** → push headers to Kafka, commit offsets.  
-2. **BTC ZeroMQ listener** → write raw tx to a local LevelDB, then decode via `decoderawtransaction`.  
-3. **Simple “de-reorger”** → accepts unordered blocks, emits canonical order with rollback.  
-4. **Merkle-tree verifier** → given txID + block, prove inclusion (interview classic).  
+1. **ETH live block consumer** → push headers to Kafka, commit offsets.
+2. **BTC ZeroMQ listener** → write raw tx to a local LevelDB, then decode via `decoderawtransaction`.
+3. **Simple “de-reorger”** → accepts unordered blocks, emits canonical order with rollback.
+4. **Merkle-tree verifier** → given txID + block, prove inclusion (interview classic).
 
 Each ≤ 150 LOC, table-driven tests, `go test -race -bench .`.
 
@@ -173,13 +170,14 @@ Each ≤ 150 LOC, table-driven tests, `go test -race -bench .`.
 
 ### Closing advice for the interview
 
-* Anchor every answer in *data-integrity* and *chain-specific quirks* (e.g., “I wait ≥ 2 epochs before declaring ETH data final to avoid re-orgs.”).  
-* Name-drop the *tool ⇄ problem* mapping (Erigon for lightweight archives, Firehose for replay, `eth_subscribe` for near-real time).  
-* Show awareness of **scale**: today’s archive nodes = TBs, 2027 ETH danksharding ≈ ↑ state, so decouple storage tier.  
+* Anchor every answer in *data-integrity* and *chain-specific quirks* (e.g., “I wait ≥ 2 epochs before declaring ETH
+  data final to avoid re-orgs.”).
+* Name-drop the *tool ⇄ problem* mapping (Erigon for lightweight archives, Firehose for replay, `eth_subscribe` for
+  near-real time).
+* Show awareness of **scale**: today’s archive nodes = TBs, 2027 ETH danksharding ≈ ↑ state, so decouple storage tier.
 
-Master the pieces above and you can discuss *both* algorithmic underpinnings *and* pragmatic pipeline design—exactly what Coinbase’s Data Foundations team looks for. Good luck!
-::contentReference[oaicite:6]{index=6}
-```
+Master the pieces above and you can discuss *both* algorithmic underpinnings *and* pragmatic pipeline design—exactly
+what Coinbase’s Data Foundations team looks for. Good luck!
 
 [1]: https://docs.polygon.technology/pos/how-to/erigon-archive-node/?utm_source=chatgpt.com "Run an Erigon archive node - Polygon Knowledge Layer"
 
